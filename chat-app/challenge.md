@@ -61,6 +61,9 @@ Everything you've built so far was **request → response**: the client asks, th
 ### Step 1: Clarify requirements
 
 Write down 2–3 questions you'd ask the interviewer, and the assumptions you'll make.
+Questions
+
+1. Are updates/stories included in this challenge
 
 ### Step 2: Back-of-the-envelope estimation
 
@@ -71,6 +74,14 @@ Calculate:
 - How many **chat servers** are needed just to hold the open connections at peak?
 
 > Tip: 1 day ≈ 100,000 seconds. Round aggressively.
+
+messages per day = 2,00,00,00,000
+messages per second = 23,148
+peak messages= 23,148*3=69444 messages per second
+storage = 2,00,00,00,000 * 300 bytes(100+200)= 600 gb per day = 600*365*5 = 1095 TB
+Number of users active per second = 579 users per second
+Which a single server can easily manage
+But in case of 20 million users at a time, at peak = minimum 400 servers are needed
 
 ### Step 3: Real-time delivery (the core problem)
 
@@ -83,11 +94,38 @@ Bob's phone needs to receive Alice's message **as soon as it's sent**. Look up t
 
 For each one: How does it work? How fast is it? What does it cost the server (think about 20 million users)? Then **pick one** and say why.
 
+Short Polling - In this technique, we send http request to user in short intervals asking if there is anything for the user, if yes then give it, if no then hit again after short interval.
+
+Long pollint - Here the request is send to the server, and it waits for the messages or the time expiry, once either happens, the response is send to the user and again new request is send
+
+Issue - in both we are constantly sending http request to check if there is any update, unncessary extra use of bandwidth and resources.
+
+Websockets - Here we establish an open connection between the user and the server, once its established then user and server can directly talk to each other, no need of http request for each message, its event driven. It is the best option for chatting and live streaming as users and servers are connected in real time.
+
+Server Sent events - here instead of client requesting, server is the one who constantly streams the data to user client, in first request a connection is established then server sends the data to user after certain interval.
+
 ### Step 4: Protocol / API
 
 - What kinds of messages travel over the connection between the app and the server? (Think: sending a chat message, the server confirming it, "delivered", "read", "typing"…) Write down the **fields** of a chat message.
 - Which things are better as normal **REST** endpoints instead (e.g. loading old history, creating a group, logging in)?
 - Alice's phone loses signal right after tapping Send, and it **resends** the message when it reconnects. How do you avoid Bob getting it **twice**? (Check your [glossary](../glossary.md)!)
+
+1. Kinds of messages, we are dealing with text messages as of now, at most we will include media files. In case you are asking about the messages in between the client and websocket server than there we are using event driven architecture where everything is event based.
+   there are various way, like broadcast etc.
+   Types can me
+   {'messageSend',{messageType:'video',mediaId='s3 bucket name/id of media',messageId:"", sendTo:"userId",userId:"userId",messageStatus:"pending"}}
+   {'messageReceived',{ messageType:'message', sendby:'userid, to:'userid',messageId:"", timestamp:time}}
+   {'groupMessageReceived',{ messageType:'image',mediaId='s3 bucket name/id of media',messageId:"", sendby:'userid, toGroup:'groupId',timestamp:time}}
+   |
+   |\_ from groupId extract all users id and send the messageTeceived event
+   {"GroupCreated",{groupName:'', members:[],settings:{admins:[],messageDisappear:"true",autoDeleteMessage:'false'}}}
+   {"AddMemberToGroup",{groupId:"",userId:""}}
+   {"RemoveUserFromGropu",{groupId:"",userId:""}}
+   {"DeleteGroup",{groupId:""}}
+   {"AddedToTheGroup",{userId:"",groupId:""}}
+
+2. Apart from direct communication between users, individual or in group. Rest of the things can use the REST endpoints, media upload, authentication, authorization, creating room, managing room, adding/removing users, getting old messages etc.
+3. For this issue, we can generate unique id for each message, like using a combination of usesrid+plus message number, something like this. So once the user comes back online, a request will try to resend the message, and it will check if the message already exists in the db or not, if yes, then do nothing and update the ui state, other wise deliver the message.
 
 ### Step 5: Data model
 
@@ -103,6 +141,15 @@ Alice is connected to **chat server 7**. Bob is connected to **chat server 42**.
 - How does server 7 find out **which server Bob is on**?
 - How does the message actually get from server 7 to server 42?
 - What happens if Bob is **not connected anywhere** (offline)?
+
+1. For this first we will do region based directory, which will direct the request to where we might be keeping users id and the last connected redis cache, yes we will be using redis cache to keep the status of user. using this user sitting in us can communicate with user in japan. US user will connect to a server, that server will look at the other users region on the one massive directory, from there it will find its redis through which it will find to which server this user is connected to. Then a connection can be established between them.
+
+2. So the user a is connected to server 47 and user b is connected to server 2. Now the user a will send the message and since the server 47 knows to which server the user b is connected to, it will directly send the event/message to that server and user b will receive the message.
+3. So, during first connection, if the user can be found in any of the redis cache, then we can assume two cases
+   -user is offline
+   -user doesn't exists
+
+In case of offline, we will store the message in the pending db, so once the user connects back, first it will check the db if there is any updates for them. In case of user doesn't exists, then it doesn't exists, can't do anything about it, just the show the user that your target user doesn't exist.
 
 > Concepts you may want to look up: **pub/sub** (e.g. Redis Pub/Sub), "connection registry" / "session store".
 
@@ -124,7 +171,7 @@ Answer at least two of these:
 - **Ordering:** Alice sends "A", then "B" quickly. How do you guarantee Bob sees "A" before "B", and that a group of 100 sees the same order?
 - **Group fan-out:** one message to a 100-member group = up to 100 deliveries. Where does that work happen, and what if 30 members are offline?
 - **Presence at scale:** 20 million online users. If every "online/offline" change is sent to all of a user's contacts immediately, how much traffic is that? How would you reduce it? (Look up **heartbeat**.)
-- **Load balancing long-lived connections:** a normal load balancer spreads *requests*. What changes when each connection stays open for hours? What happens when you add a new chat server?
+- **Load balancing long-lived connections:** a normal load balancer spreads _requests_. What changes when each connection stays open for hours? What happens when you add a new chat server?
 
 ---
 
