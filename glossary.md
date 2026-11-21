@@ -22,6 +22,8 @@ You often understand an idea but don't know its name. Use the **quick lookup** f
 | **Copy** all the data to more machines | **Replication** |
 | **Split** the data across machines | **Sharding / partitioning** |
 | A way to split data so that **adding a machine moves only a little data** | **Consistent hashing** |
+| A sorted lookup structure so the DB **jumps to matching rows instead of scanning every row** | **Database index** (B-tree) |
+| A middle table linking two tables (users ↔ groups), one row per pair, holding **data about the pair** (role, joined_at) | **Junction table** (many-to-many) |
 | A backup machine **takes over** when the main one dies | **Failover** |
 | **One box** whose failure takes everything down | **Single point of failure (SPOF)** |
 | Server keeps **no memory of the user** between requests, so any server can handle any request | **Stateless** |
@@ -51,6 +53,9 @@ You often understand an idea but don't know its name. Use the **quick lookup** f
 | Trying thousands of passwords on `/login` | **Brute-force attack** |
 | Always send the same user to the **same server / region** | **Sticky routing (session affinity)** |
 | Users reach the **nearest server** automatically by the same IP address | **Anycast / geo-routing** |
+| A lookup table of **which server each online user is connected to** | **Connection registry / session store** |
+| Servers post to a named channel; whoever **subscribed** to it gets the message | **Pub/Sub (publish–subscribe)** |
+| A small "I'm still alive" signal sent **every few seconds** | **Heartbeat** |
 
 ---
 
@@ -152,6 +157,22 @@ You often understand an idea but don't know its name. Use the **quick lookup** f
 - Pick a key that every request already knows and that spreads the load evenly.
 - Solves **data too big** and **too many writes**. Each shard usually still has its own replicas.
 - **Seen in:** URL shortener (Step 7.3).
+
+### Junction table (many-to-many)
+*"A user can be in many groups and a group has many users, so put the link itself in its own table."*
+- `group_members(group_id, user_id, role, joined_at, muted_until, ...)`: one row per user per group, primary key `(group_id, user_id)`.
+- Holds data that belongs to **the pair**, not to either side (Bob is an admin in group A, a member in group B).
+- Better than a member list inside the group row: per-member data has a home, "Bob's groups" is an index lookup, and concurrent adds don't overwrite each other.
+- **Seen in:** chat app (groups).
+
+### Database index (B-tree)
+*"Like the index at the back of a book: look up the word, jump straight to the page."*
+- A separate structure, kept **sorted** by the chosen column(s), that points to where each row is stored.
+- No index → the DB scans every row: **O(n)**. B-tree index → a few hops down a tree: **O(log n)** (about 3–4 disk reads even for a billion rows).
+- Hash index → **O(1)** for exact matches only (`id = 42`), no ranges or sorting.
+- **Composite index** `(chat_id, seq)`: sorted by chat, then by seq, so "chat X, seq > 1041, latest 50" is one jump plus reading neighbouring rows.
+- **Cost:** extra storage, and every write must update the index too. Index only the columns you actually query.
+- **Seen in:** url-shortener (`short_code`), chat app (`(chat_id, seq)`).
 
 ### Consistent hashing
 *"A way to assign keys to machines so adding or removing a machine moves only a small part of the data."*
@@ -304,6 +325,9 @@ You often understand an idea but don't know its name. Use the **quick lookup** f
 | **Fan-out** | One event delivered to many queues or services |
 | **Transactional outbox** | Write the data + an outbox row in one DB transaction; a relay publishes from the outbox |
 | **Decoupling** | Producer and consumer don't need to know about or wait for each other |
+| **Pub/Sub (publish–subscribe)** | Publishers send to a *channel*; every current subscriber receives it. Nothing is stored, so if no one is listening it's gone (unlike a queue). e.g. each chat server subscribes to its own channel `server-8` |
+| **Connection registry / session store** | Key-value map `user → server they're connected to` (usually Redis, with a TTL refreshed by heartbeats). Answers "where is Bob?"; the message itself never passes through it. Seen in: chat app |
+| **Heartbeat** | Periodic "still alive" ping (e.g. every 30 s). If heartbeats stop, the TTL expires and the user or server is treated as gone. Seen in: chat app (presence, registry) |
 
 ---
 
