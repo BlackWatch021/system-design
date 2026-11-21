@@ -63,7 +63,14 @@ Everything you've built so far was **request → response**: the client asks, th
 Write down 2–3 questions you'd ask the interviewer, and the assumptions you'll make.
 Questions
 
-1. Are updates/stories included in this challenge
+1. Are updates/stories included in this challenge.
+2. What files do I need to take in consideration if media upload is an option in message
+3. Do I have to add the blocking other user feature
+4. Admin, user, kick etc features are needed in group as of now??
+
+Assumptions
+
+1. User's are connected throughout the world
 
 ### Step 2: Back-of-the-envelope estimation
 
@@ -134,6 +141,13 @@ Server Sent events - here instead of client requesting, server is the one who co
 - **Ordering:** can you sort messages by the timestamp from the sender's **phone clock**? What could go wrong? What would you use instead?
 - SQL or NoSQL? Why?
 
+1. users, group, groupMembers, userHomeRegion, messages, missedNotification (for offline users)
+2. For this we can do pagination, we will load only the first 50 messages, and when user reaches the threshold, say 20th message from bottom. Then we will hit the pagination api to send next 50 messages. This way it will be fast yet seamless with better UX
+3. We can't rely on user's phone clock as it can be mismatched and the time isn't same through the globe, instead we will give each message an id, and we will store it with that id as the primary key, then indexing on it for easy and fast read.
+4. For this, I am going to use SQL as the majority of data is sorted.
+
+Also created a data model diagram, check that out too.
+
 ### Step 6: Routing between chat servers
 
 Alice is connected to **chat server 7**. Bob is connected to **chat server 42**. Alice's message arrives at server 7.
@@ -172,6 +186,12 @@ Answer at least two of these:
 - **Group fan-out:** one message to a 100-member group = up to 100 deliveries. Where does that work happen, and what if 30 members are offline?
 - **Presence at scale:** 20 million online users. If every "online/offline" change is sent to all of a user's contacts immediately, how much traffic is that? How would you reduce it? (Look up **heartbeat**.)
 - **Load balancing long-lived connections:** a normal load balancer spreads _requests_. What changes when each connection stays open for hours? What happens when you add a new chat server?
+
+1. if the chat server goes down, so does the users with it, but they will be alloted another server. Talking about the messages, they will be lost and since we already saved them in the db, they will be fetched once the user comes back online.
+2. For each message we will be generating individual ids, using these ids we can ensure that the order is preserve. Plus we are following the pub/sub feature so the the message is published to everyone in the same instance, which preserves the order, irrespective of how fast one send it.
+3. For this we already have a redis pub/sub server which is responsible for the delivery of these messages, plus for the offline users, we will be adding these messages in the missed db table, so once they come online, they will fetch them from there.
+4. For this, we won't be sending the details of every contacts only the most recent ones, other wise when user opens the other user's chat, then we will fetch, we will look if user is online or offline. This will readuce the traffic quite a lot
+5. For this we have a dedicated cluster of websockt servers, which will be handeling the live connections and they are pretty reliable and can hold large number of connections at a time, when we add a new chat server, then it will reduce the load on the other server although each server can easily handle 50,000 connections at a time, so its not a big deal for it.
 
 ---
 
