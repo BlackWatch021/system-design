@@ -56,6 +56,13 @@ You often understand an idea but don't know its name. Use the **quick lookup** f
 | A lookup table of **which server each online user is connected to** | **Connection registry / session store** |
 | Servers post to a named channel; whoever **subscribed** to it gets the message | **Pub/Sub (publish–subscribe)** |
 | A small "I'm still alive" signal sent **every few seconds** | **Heartbeat** |
+| "Give me the next 50 **after/before this item**" instead of skipping N rows | **Cursor (keyset) pagination** |
+| The server stamps each message 1, 2, 3… **per chat** so everyone sees the same order | **Sequence number (server-assigned)** |
+| Thousands of clients **reconnect at the same moment** after a crash | **Reconnect storm** (thundering herd) |
+| Stop sending a server new work, let it finish/move what it has, then remove it | **Connection draining** |
+| Send each new connection to the server with the **fewest open connections** | **Least-connections load balancing** |
+| Wait a moment before reacting, so rapid flip-flops count as one change | **Debouncing** |
+| Server keeps a message **only until it's delivered**, then deletes it | **Store-and-forward** |
 
 ---
 
