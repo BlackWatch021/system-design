@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="puZeeeaulOHYbO1BSW0p" name="Page-1">
-        <mxGraphModel dx="1481" dy="1303" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1220" dy="1303" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -512,7 +512,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="ref-arch-page" name="Improved (reference)">
-        <mxGraphModel dx="3703" dy="2658" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1870" dy="1488" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -520,10 +520,10 @@
                     <mxGeometry height="40" width="1300" y="-60" as="geometry"/>
                 </mxCell>
                 <mxCell id="ref-arch-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="Alice&#39;s phone" vertex="1">
-                    <mxGeometry height="60" width="110" y="270" as="geometry"/>
+                    <mxGeometry height="60" width="110" x="-120" y="270" as="geometry"/>
                 </mxCell>
                 <mxCell id="ref-arch-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="Load balancer (L4, WebSocket)&lt;br&gt;&lt;span style=&quot;font-weight:normal&quot;&gt;least-connections; long-lived TCP connections&lt;/span&gt;" vertex="1">
-                    <mxGeometry height="90" width="180" x="180" y="255" as="geometry"/>
+                    <mxGeometry height="90" width="180" x="125" y="250" as="geometry"/>
                 </mxCell>
                 <mxCell id="ref-arch-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="Chat server 4&lt;br&gt;&lt;span style=&quot;font-weight:normal&quot;&gt;holds ~50k WebSockets&lt;br&gt;map: userId → socket&lt;/span&gt;" vertex="1">
                     <mxGeometry height="100" width="180" x="440" y="250" as="geometry"/>
